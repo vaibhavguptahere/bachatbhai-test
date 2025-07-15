@@ -20,10 +20,99 @@ import { toast } from "sonner";
 import { RegisterAiTool } from "@liveblocks/react";
 import { ChevronDownIcon } from "lucide-react";
 import { formatters } from "@/lib/utils";
-import useSWR from "swr";
-import { fetchTransactions } from "@/lib/transactionsApi";
-import { fetchInvoices } from "@/lib/invoicesApi";
+import { getUserAccounts } from "@/actions/dashboard";
+import { getAccountWithTransactions } from "@/actions/account";
+import { getFinancialSummary } from "@/actions/ai-data";
 import { ProgressBar } from "../components/ProgressBar";
+
+// Tool to show user's account balances and information
+export function UserAccountsTool() {
+  return (
+    <RegisterAiTool
+      name="user-accounts"
+      tool={defineAiTool()({
+        description: "Show user's accounts with balances and transaction counts",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: [],
+          additionalProperties: false,
+        },
+        execute: async () => {
+          const accounts = await getUserAccounts();
+          return {
+            data: { accounts },
+          };
+        },
+        render: ({ args }) =>
+          args ? <AiTool title="User Accounts" /> : null,
+      })}
+    />
+  );
+}
+
+// Tool to analyze user's spending patterns
+export function SpendingAnalysisTool() {
+  return (
+    <RegisterAiTool
+      name="spending-analysis"
+      tool={defineAiTool()({
+        description: "Analyze user's spending patterns and financial summary",
+        parameters: {
+          type: "object",
+          properties: {},
+          required: [],
+          additionalProperties: false,
+        },
+        execute: async () => {
+          const summary = await getFinancialSummary();
+          return {
+            data: summary.data,
+          };
+        },
+        render: ({ args }) =>
+          args ? <AiTool title="Spending Analysis" /> : null,
+      })}
+    />
+  );
+}
+
+// Tool to get transactions for a specific account
+export function AccountTransactionsTool() {
+  return (
+    <RegisterAiTool
+      name="account-transactions"
+      tool={defineAiTool()({
+        description: "Get transactions for a specific account by account ID",
+        parameters: {
+          type: "object",
+          properties: {
+            accountId: { type: "string" },
+            limit: { type: "number" },
+          },
+          required: ["accountId"],
+          additionalProperties: false,
+        },
+        execute: async (args) => {
+          const accountData = await getAccountWithTransactions(args.accountId);
+          const transactions = accountData?.transactions.slice(0, args.limit || 10) || [];
+          return {
+            data: {
+              account: accountData ? {
+                name: accountData.name,
+                type: accountData.type,
+                balance: accountData.balance
+              } : null,
+              transactions
+            },
+          };
+        },
+        render: ({ args }) =>
+          args ? <AiTool title={`Account Transactions`} /> : null,
+      })}
+    />
+  );
+}
 
 // Shows a bar highlighting the remaining seats, along with text
 export function SeatsTool() {
@@ -73,138 +162,6 @@ export function SeatsTool() {
   );
 }
 
-// Allows the AI to query various transaction details, and it will save the results internally
-export function QueryTransactionTool() {
-  return (
-    <RegisterAiTool
-      name="query-transaction"
-      tool={defineAiTool()({
-        description: `Query the transaction details. 
-        You can query by date, currency, continent, country, min amount, max amount, expense status, payment status, and limit. 
-        You can also query by multiple of these parameters. 
-        Here are some types you should know.
-        Use the correct formatting for the currency, e.g. with the symbol.
-        
-        expenseStatus: ${JSON.stringify(expense_statuses)}
-        paymentStatus: ${JSON.stringify(payment_statuses)}
-        locations: ${JSON.stringify(locations)}
-        currencies: ${JSON.stringify(currencies)}
-        categories: ${JSON.stringify(categories)}
-        merchants: ${JSON.stringify(merchants)}
-        `,
-        parameters: {
-          type: "object",
-          properties: {
-            dateFrom: { type: ["string", "null"] },
-            dateTo: { type: ["string", "null"] },
-            currency: { type: ["string", "null"] },
-            continent: { type: ["string", "null"] },
-            country: { type: ["string", "null"] },
-            minAmount: { type: ["number", "null"] },
-            maxAmount: { type: ["number", "null"] },
-            expenseStatus: { type: ["string", "null"] },
-            paymentStatus: { type: ["string", "null"] },
-            limit: { type: ["number", "null"] },
-            merchant: { type: ["string", "null"] },
-          },
-          required: [
-            "dateFrom",
-            "dateTo",
-            "currency",
-            "continent",
-            "country",
-            "minAmount",
-            "maxAmount",
-            "expenseStatus",
-            "paymentStatus",
-            "limit",
-            "merchant",
-          ],
-        },
-        execute: async (args) => {
-          // OpenAI forces `required` therefore we're using `null` instead, then removing it here
-          const { transactions } = await fetchTransactions(
-            Object.fromEntries(
-              Object.entries(args).map(([key, value]) => [
-                key,
-                value === null ? undefined : value,
-              ])
-            )
-          );
-          return {
-            data: {
-              transactions,
-            },
-          };
-        },
-        render: ({ args }) =>
-          args ? <AiTool title="Transaction query" /> : null,
-      })}
-    />
-  );
-}
-
-// Allows the AI to query various invoice details, and it will save the results internally
-export function QueryInvoiceTool() {
-  return (
-    <RegisterAiTool
-      name="query-invoice"
-      tool={defineAiTool()({
-        description: "Query the invoice details",
-        parameters: {
-          type: "object",
-          properties: {
-            dateFrom: { type: ["string", "null"] },
-            dateTo: { type: ["string", "null"] },
-            currency: { type: ["string", "null"] },
-            continent: { type: ["string", "null"] },
-            country: { type: ["string", "null"] },
-            minAmount: { type: ["number", "null"] },
-            maxAmount: { type: ["number", "null"] },
-            invoiceStatus: { type: ["string", "null"] },
-            limit: { type: ["number", "null"] },
-            client: { type: ["string", "null"] },
-          },
-          required: [
-            "dateFrom",
-            "dateTo",
-            "currency",
-            "continent",
-            "country",
-            "minAmount",
-            "maxAmount",
-            "invoiceStatus",
-            "limit",
-            "client",
-          ],
-        },
-        execute: async (args) => {
-          // OpenAI forces `required` therefore we're using `null` instead, then removing it here
-          const { invoices } = await fetchInvoices(
-            Object.fromEntries(
-              Object.entries(args).map(([key, value]) => [
-                key,
-                value == null ? undefined : value,
-              ])
-            )
-          );
-          return {
-            data: {
-              invoices,
-            },
-          };
-        },
-        render: ({ args }) =>
-          args ? (
-            <AiTool title="Invoice query" collapsed={true}>
-              <AiTool.Inspector />
-            </AiTool>
-          ) : null,
-      })}
-    />
-  );
-}
-
 // Allows the AI to navigate to a page, showing a toast notification as it does it
 export function NavigateToPageTool() {
   const router = useRouter();
@@ -244,263 +201,127 @@ export function NavigateToPageTool() {
   );
 }
 
-// Allows the AI to fetch all companies with unpaid invoices, and send invoice reminders to them (or in this demo, just show a toast)
-export function SendInvoiceRemindersTool() {
+// Tool to display account information in a card format
+export function AccountDisplayTool() {
   return (
     <RegisterAiTool
-      name="send-invoice-reminders"
+      name="display-account"
       tool={defineAiTool()({
-        description: "Send invoice reminders for unpaid invoices.",
+        description: "Display account information in a formatted card",
         parameters: {
           type: "object",
+          properties: {
+            accountId: { type: "string" },
+            accountName: { type: "string" },
+            accountType: { type: "string" },
+            balance: { type: "number" },
+            isDefault: { type: "boolean" },
+          },
+          required: ["accountId", "accountName", "accountType", "balance"],
+          additionalProperties: false,
+        },
+        render: ({ args, respond }) => {
+          if (!args) return null;
+          respond();
+
+          return (
+            <div className="my-2 w-full rounded-sm bg-neutral-100 dark:bg-neutral-900 px-4 pt-3.5 pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 font-semibold">
+                  {args.accountName}
+                  {args.isDefault && (
+                    <Badge variant="default" className="ml-2 text-xs">Default</Badge>
+                  )}
+                </div>
+                <Badge variant="outline">{args.accountType}</Badge>
+              </div>
+              <div className="mt-2 text-lg font-bold text-green-600">
+                Rs {args.balance.toFixed(2)}
+              </div>
+            </div>
+          );
+        },
+      })}
+    />
+  );
+}
+
+// Tool to display transaction information
+export function TransactionDisplayTool() {
+  return (
+    <RegisterAiTool
+      name="display-transaction"
+      tool={defineAiTool()({
+        description: "Display transaction information in a formatted card",
+        parameters: {
+          type: "object",
+          properties: {
+            id: { type: "string" },
+            type: { type: "string" },
+            amount: { type: "number" },
+            description: { type: "string" },
+            category: { type: "string" },
+            date: { type: "string" },
+            status: { type: "string" },
+          },
+          required: ["id", "type", "amount", "description", "category", "date"],
+          additionalProperties: false,
+        },
+        render: ({ args, respond }) => {
+          if (!args) return null;
+          respond();
+
+          return (
+            <div className="my-2 w-full rounded-sm bg-neutral-100 dark:bg-neutral-900 px-4 pt-3.5 pb-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 font-semibold">
+                  {args.description}
+                </div>
+                <Badge variant={args.type === 'INCOME' ? 'default' : 'destructive'}>
+                  {args.type}
+                </Badge>
+              </div>
+              <div className="mt-1 flex items-center justify-between">
+                <span className="text-sm text-neutral-600 capitalize">
+                  {args.category}
+                </span>
+                <span className={`font-bold ${args.type === 'INCOME' ? 'text-green-600' : 'text-red-600'}`}>
+                  {args.type === 'INCOME' ? '+' : '-'}Rs {args.amount.toFixed(2)}
+                </span>
+              </div>
+              <div className="mt-1 text-xs text-neutral-500">
+                {new Date(args.date).toLocaleDateString()}
+              </div>
+            </div>
+          );
+        },
+      })}
+    />
+  );
+}
+
+// Create account tool
+export function CreateAccountTool() {
+  return (
+    <RegisterAiTool
+      name="create-account"
+      tool={defineAiTool()({
+        description: "Help user create a new account by providing a link to the account creation form",
+        parameters: {
+          type: "object",
+          properties: {},
           additionalProperties: false,
           required: [],
         },
-
-        render: function Render({ stage }) {
-          const {
-            data: unpaidInvoices,
-            isLoading: isLoadingUnpaid,
-            error: errorUnpaid,
-          } = useSWR(
-            "unpaid-invoices",
-            async () => {
-              const response = await fetchInvoices({
-                invoiceStatus: "unpaid",
-              });
-              return response.invoices;
-            },
-            {
-              refreshInterval: 20000,
-            }
-          );
-
-          // Group invoices by company, attaching full invoice objects
-          const clients =
-            unpaidInvoices?.reduce((acc: any[], invoice) => {
-              const existingCompany = acc.find(
-                (c) => c.name === invoice.client
-              );
-              if (existingCompany) {
-                existingCompany.invoices.push(invoice);
-              } else {
-                acc.push({
-                  name: invoice.client,
-                  invoices: [invoice],
-                });
-              }
-              return acc;
-            }, []) || [];
-
-          if (!clients) return null;
-
+        render: ({ args, respond }) => {
+          if (!args) return null;
+          respond();
           return (
-            <AiTool
-              title={
-                stage === "executed"
-                  ? "Invoice reminders sent"
-                  : "Send invoice reminders?"
-              }
-              collapsed={false}
-            >
-              <AiTool.Confirmation
-                confirm={async () => {
-                  // Simulating sending emails
-                  const promise = () =>
-                    new Promise((resolve) => setTimeout(resolve, 2500));
-
-                  toast.promise(promise, {
-                    loading: "Sending invoice reminders...",
-                    success: () => {
-                      return `Invoice reminders sent`;
-                    },
-                  });
-
-                  await promise;
-                  return {
-                    description: "Invoice reminders sent",
-                    data: {},
-                  };
-                }}
-              >
-                {isLoadingUnpaid && (
-                  <div className="text-xs text-neutral-500">
-                    Loading invoice details...
-                  </div>
-                )}
-                {errorUnpaid && (
-                  <div className="text-xs font-semibold text-red-500">
-                    Error
-                  </div>
-                )}
-                {!isLoadingUnpaid && !errorUnpaid && (
-                  <ul className="flex flex-col gap-2">
-                    {clients.map((client) => (
-                      <li
-                        key={
-                          client.name +
-                          client.invoices
-                            .map((inv: any) => inv.invoice_id)
-                            .join(",")
-                        }
-                      >
-                        <details className="group">
-                          <summary className="flex cursor-pointer items-center justify-between select-none">
-                            <div className="flex items-baseline gap-1.5">
-                              <span className="font-semibold">
-                                {client.name}
-                              </span>
-
-                              <span className="text-xs font-normal text-neutral-500">
-                                {client.invoices.length} unpaid
-                              </span>
-                            </div>
-                            <ChevronDownIcon className="mt-0.5 size-4 opacity-70 transition-transform group-open:rotate-180" />
-                          </summary>
-                          <ul className="mt-1 text-xs text-neutral-500">
-                            {client.invoices.map((invoice: any) => (
-                              <li
-                                key={invoice.invoice_id}
-                                className="mt-1.5 mb-2 ml-3.5 list-disc"
-                              >
-                                <div>
-                                  {formatters.currency({
-                                    number: invoice.amount,
-                                  })}
-                                  , due <Timestamp date={invoice.due_date} />
-                                </div>
-                              </li>
-                            ))}
-                          </ul>
-                        </details>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </AiTool.Confirmation>
-            </AiTool>
-          );
-        },
-      })}
-    />
-  );
-}
-
-// Allows the AI to send one unpaid reminder by submitting company name, invoice number, and due date
-export function SendOneUnpaidReminderTool() {
-  return (
-    <RegisterAiTool
-      name="send-an-invoice-reminder"
-      tool={defineAiTool()({
-        description:
-          "Send one unpaid invoice reminder. You must submit the client and due date.",
-        parameters: {
-          type: "object",
-          properties: {
-            client: { type: "string" },
-            dueDate: { type: "string" },
-          },
-          required: ["client", "dueDate"],
-          additionalProperties: false,
-        },
-        render: ({ args, stage }) => {
-          if (stage === "receiving") return null;
-          return (
-            <AiTool
-              title={
-                stage === "executing"
-                  ? `Send invoice reminder?`
-                  : `Invoice reminder sent`
-              }
-              collapsed={false}
-            >
-              <AiTool.Confirmation
-                confirm={async () => {
-                  // Simulating sending emails
-                  const promise = () =>
-                    new Promise((resolve) => setTimeout(resolve, 2500));
-
-                  toast.promise(promise, {
-                    loading: `Sending invoice reminder to ${args.client}...`,
-                    success: () => {
-                      return `Invoice reminder sent to ${args.client}`;
-                    },
-                  });
-
-                  await promise;
-                  return {
-                    description: `Invoice reminder sent to ${args.client}`,
-                    data: {},
-                  };
-                }}
-              >
-                <div className="w-full rounded-sm bg-neutral-100 dark:bg-neutral-900 px-4 pt-3.5 pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 font-semibold">
-                      {args.client}
-                    </div>
-                    <Badge variant="warning">Unpaid</Badge>
-                  </div>
-
-                  <div className="mt-0 flex items-center gap-1.5 text-xs">
-                    Due on {format(args.dueDate, "MMM d yyyy")}{" "}
-                  </div>
-                </div>
-              </AiTool.Confirmation>
-            </AiTool>
-          );
-        },
-      })}
-    />
-  );
-}
-
-// Allows the AI to invite a new member to the team with a confirm/cancel dialog. In this demo, inviting just means showing a toast.
-export function InviteMemberTool({
-  onInvite,
-}: {
-  onInvite: ({ name, email }: { name: string; email: string }) => void;
-}) {
-  return (
-    <RegisterAiTool
-      name="invite-member"
-      tool={defineAiTool()({
-        description:
-          "Invite a new member to the team. Always ask for an email address, but do not ask for a game. If they don't provide a name, guess what it is from the email. For example, if the email is pierre@example.com, the name should be Pierre.",
-        parameters: {
-          type: "object",
-          properties: {
-            email: { type: "string" },
-            name: {
-              type: "string",
-            },
-          },
-          additionalProperties: false,
-          required: ["email", "name"],
-        },
-        render: ({ args, stage }) => {
-          if (stage === "receiving") return null;
-
-          return (
-            <AiTool
-              title={
-                stage === "executing" ? "Invite member?" : "Member invited"
-              }
-              collapsed={false}
-            >
-              <AiTool.Confirmation
-                confirm={() => {
-                  toast.success(`${args.email} has been invited`);
-                  onInvite({ name: args.name, email: args.email });
-                  return {
-                    description: `The user confirmed inviting ${args.email} to the team`,
-                    data: {},
-                  };
-                }}
-              >
-                Invite <code>{args.email}</code> to the team?
-              </AiTool.Confirmation>
-            </AiTool>
+            <div className="my-2 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                You can create a new account by clicking the "Add New Account" card on your dashboard, or I can navigate you there.
+              </p>
+            </div>
           );
         },
       })}

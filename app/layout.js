@@ -10,8 +10,7 @@ import {
 import { Toaster } from "@/components/ui/sonner"
 import LenisProvider from "@/components/LenisProvider";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
-import { LiveblocksProvider } from "@/components/ai-chat/LiveblocksProvider";
-import { AiChatRoom } from "@/components/ai-chat/AiChatRoom";
+import { AiPopup } from "@/ai-popup/AiPopup";
 
 export const metadata = {
   title: "Bachat Bhai",
@@ -24,20 +23,17 @@ export default function RootLayout({ children }) {
       <ClerkProvider>
         <html lang="en">
           <body className={`${inter}`}>
-            <LiveblocksProvider>
-              <LenisProvider>
-                <ScrollProgressBar />
+            <LenisProvider>
+              <ScrollProgressBar />
 
-                <Toaster expand={false} richColors closeButton />
-                <Navbar />
-                <div className="min-h-screen">
-                  <AiChatRoom>
-                    {children}
-                  </AiChatRoom>
-                </div>
-                <Footer />
-              </LenisProvider>
-            </LiveblocksProvider>
+              <Toaster expand={false} richColors closeButton />
+              <Navbar />
+              <div className="min-h-screen">
+                {children}
+                <AiPopup />
+              </div>
+              <Footer />
+            </LenisProvider>
           </body>
         </html>
       </ClerkProvider >

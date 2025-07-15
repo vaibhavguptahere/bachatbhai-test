@@ -4,21 +4,24 @@ import { AiChatComponentsEmptyProps } from "@liveblocks/react-ui";
 // Clickable suggestions in the placeholder
 const SUGGESTIONS = [
   {
-    text: "Send invoice reminders",
-    prompt: "Send invoice reminders to all companies with overdue invoices",
+    text: "Show my accounts",
+    prompt: "Show me all my accounts with their balances",
   },
   {
-    text: "Which merchants bought last year?",
-    prompt: "List all merchants from the previous year",
+    text: "Analyze my spending",
+    prompt: "Analyze my spending patterns and give me insights",
   },
   {
-    text: "How many seats do I have?",
-    prompt: "How many seats do I have?",
+    text: "Recent transactions",
+    prompt: "Show me my recent transactions",
   },
-  { text: "Take me to billing", prompt: "Navigate to the billing page" },
   {
-    text: "Invite a member",
-    prompt: "Invite a member to the team",
+    text: "Create new account",
+    prompt: "Help me create a new account",
+  },
+  {
+    text: "Go to dashboard",
+    prompt: "Navigate to the dashboard",
   },
 ];
 
@@ -33,8 +36,7 @@ export function AiChatPlaceholder({ chatId }: AiChatComponentsEmptyProps) {
           How can I help you?
         </h3>
         <p className="text-balance text-neutral-500">
-          Ask me anything about reports or transactions. I can answer questions
-          and help you work.
+          Ask me anything about your finances, accounts, or transactions. I can help you analyze your spending and manage your money.
         </p>
       </div>
       <div className="flex flex-wrap items-start gap-2">
