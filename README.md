@@ -62,3 +62,33 @@ npx prisma init
 ```bash
 npx prisma migrate dev --name create_models
 ```
+
+---
+
+# Liveblocks AI Chat Integration
+
+- Added Liveblocks AI chat that can answer questions about user's financial data
+- The AI can access:
+  - User accounts and balances
+  - Transaction history
+  - Spending analysis by category
+  - Financial summaries
+
+## Setup Instructions:
+
+1. Sign up at [Liveblocks](https://liveblocks.io)
+2. Create a new project and get your API keys
+3. Add the following to your `.env.local`:
+   ```
+   NEXT_PUBLIC_LIVEBLOCKS_PUBLIC_KEY=your_public_key
+   LIVEBLOCKS_SECRET_KEY=your_secret_key
+   NEXT_PUBLIC_LIVEBLOCKS_COPILOT_ID=your_copilot_id
+   ```
+4. The AI chat will appear as a floating button in the bottom right corner
+
+## AI Capabilities:
+- "Show me my accounts" - Lists all accounts with balances
+- "What are my recent transactions?" - Shows latest transactions
+- "Analyze my spending" - Provides spending breakdown
+- "Show transactions for [category]" - Filters by category
+- "What's my financial summary?" - Comprehensive overview
