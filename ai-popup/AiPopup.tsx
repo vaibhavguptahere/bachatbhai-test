@@ -16,15 +16,18 @@ import { AiChatPlaceholder } from "./AiChatPlaceholder";
 import {
   SeatsTool,
   NavigateToPageTool,
-  UserAccountsTool,
-  SpendingAnalysisTool,
-  AccountTransactionsTool,
-  AccountDisplayTool,
-  TransactionDisplayTool,
-  CreateAccountTool,
+  TransactionToolAi,
+  MemberToolAi,
+  SendInvoiceRemindersTool,
+  InviteMemberTool,
+  QueryTransactionTool,
+  QueryInvoiceTool,
+  SendOneUnpaidReminderTool,
 } from "./AiChatTools";
 import { siteConfig } from "@/app/siteConfig";
+import useSWR from "swr";
 import { ArrowLeftIcon, PlusIcon, XIcon } from "lucide-react";
+import { useInvitedUsers } from "@/lib/useInvitedUsers";
 
 export function AiPopup() {
   return (
@@ -41,6 +44,14 @@ export function AiPopup() {
 }
 
 function Chat({ chatId }: { chatId: string }) {
+  // Knowledge about the current team, roles, departments
+  const { data: team } = useSWR("/api/team");
+
+  // Knowledge about the current user's plan
+  const { data: plan } = useSWR("/api/plan");
+
+  const { inviteUser } = useInvitedUsers();
+
   return (
     <div className="absolute inset-0 flex flex-col">
       <RegisterAiKnowledge
@@ -53,27 +64,29 @@ function Chat({ chatId }: { chatId: string }) {
       />
       <RegisterAiKnowledge
         description="Pages you can navigate to. Use markdown to add hyperlinks to your answers, and always link when appropriate. For example: `[Billing page](/settings/billing)`."
-        value="Dashboard: /dashboard, Accounts: /account/[id], Create Transaction: /transaction/create, Transactions: /transaction"
+        value={siteConfig.baseLinks}
       />
       <RegisterAiKnowledge
         description="How to use tools"
         value="Don't tell the user the names of any tools. Just say you're doing the action."
       />
       <RegisterAiKnowledge
-        description="Financial categories available"
-        value="Income: salary, freelance, investments, business, rental, other-income. Expenses: housing, transportation, groceries, utilities, entertainment, food, shopping, healthcare, education, personal, travel, insurance, gifts, bills, other-expense"
+        description="The user's plan information. There's more information in the billing page, add a link to it with markdown."
+        value={plan}
       />
       <RegisterAiKnowledge
-        description="Account types and transaction types"
-        value="Account types: CURRENT, SAVINGS. Transaction types: INCOME, EXPENSE. Transaction status: PENDING, COMPLETED, FAILED"
+        description="The team's information. There's more information in the users page, add a link to it with markdown."
+        value={team}
       />
-      <UserAccountsTool />
-      <SpendingAnalysisTool />
-      <AccountTransactionsTool />
-      <AccountDisplayTool />
-      <TransactionDisplayTool />
-      <CreateAccountTool />
+      <SeatsTool />
+      <QueryTransactionTool />
+      <QueryInvoiceTool />
       <NavigateToPageTool />
+      <TransactionToolAi />
+      <SendInvoiceRemindersTool />
+      <SendOneUnpaidReminderTool />
+      <MemberToolAi />
+      <InviteMemberTool onInvite={inviteUser} />
       <AiChat
         layout="compact"
         chatId={chatId}
