@@ -10,7 +10,7 @@ import {
 import { Toaster } from "@/components/ui/sonner"
 import LenisProvider from "@/components/LenisProvider";
 import ScrollProgressBar from "@/components/ScrollProgressBar";
-import { AiPopup } from "@/ai-popup/AiPopup";
+import SimpleChatWidget from "@/components/ai-chat/SimpleChatWidget";
 
 export const metadata = {
   title: "Bachat Bhai",
@@ -30,7 +30,7 @@ export default function RootLayout({ children }) {
               <Navbar />
               <div className="min-h-screen">
                 {children}
-                <AiPopup />
+                <SimpleChatWidget />
               </div>
               <Footer />
             </LenisProvider>
